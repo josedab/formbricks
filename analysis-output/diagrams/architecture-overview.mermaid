@@ -1,0 +1,85 @@
+graph TB
+    subgraph "Client Layer"
+        Browser[Web Browser]
+        SDK[JavaScript SDK]
+        MobileApp[Mobile App]
+    end
+
+    subgraph "Application Layer - Next.js 15"
+        AppRouter[App Router<br/>Server Components]
+        API[API Routes v1/v2]
+        ServerActions[Server Actions]
+        Middleware[Middleware<br/>Auth/CORS]
+    end
+
+    subgraph "Business Logic Layer"
+        SurveyService[Survey Service]
+        ContactService[Contact Service]
+        ResponseService[Response Service]
+        AuthService[Auth Service]
+        IntegrationService[Integration Service]
+    end
+
+    subgraph "Data Layer"
+        Prisma[Prisma ORM]
+        Cache[Redis Cache]
+        Storage[S3 Storage]
+    end
+
+    subgraph "Infrastructure"
+        DB[(PostgreSQL<br/>+ pgvector)]
+        Redis[(Redis/<br/>Valkey)]
+        S3[(S3-Compatible<br/>Storage)]
+    end
+
+    subgraph "External Services"
+        Slack[Slack]
+        Notion[Notion]
+        Email[SMTP Email]
+        Webhooks[Webhooks]
+    end
+
+    %% Client connections
+    Browser --> AppRouter
+    Browser --> API
+    SDK --> API
+    MobileApp --> API
+
+    %% App layer to business logic
+    AppRouter --> SurveyService
+    AppRouter --> ContactService
+    API --> ResponseService
+    ServerActions --> SurveyService
+    ServerActions --> AuthService
+
+    %% Business logic to data
+    SurveyService --> Prisma
+    SurveyService --> Cache
+    ContactService --> Prisma
+    ResponseService --> Prisma
+    ResponseService --> Storage
+    IntegrationService --> Webhooks
+    IntegrationService --> Slack
+    IntegrationService --> Notion
+
+    %% Data layer to infrastructure
+    Prisma --> DB
+    Cache --> Redis
+    Storage --> S3
+
+    %% Middleware
+    Middleware --> API
+    Middleware --> AppRouter
+
+    %% Styling
+    classDef client fill:#e1f5fe
+    classDef app fill:#fff3e0
+    classDef logic fill:#e8f5e9
+    classDef data fill:#f3e5f5
+    classDef infra fill:#fce4ec
+
+    class Browser,SDK,MobileApp client
+    class AppRouter,API,ServerActions,Middleware app
+    class SurveyService,ContactService,ResponseService,AuthService,IntegrationService logic
+    class Prisma,Cache,Storage data
+    class DB,Redis,S3 infra

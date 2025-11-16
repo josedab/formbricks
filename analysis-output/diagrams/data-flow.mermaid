@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant User
+    participant SDK as JavaScript SDK
+    participant API as API Routes
+    participant Service as Service Layer
+    participant DB as PostgreSQL
+    participant Cache as Redis
+    participant Pipeline as Event Pipeline
+    participant Integration as Integrations
+
+    Note over User,SDK: 1. Survey Display
+    User->>SDK: Triggers action
+    SDK->>SDK: Check eligibility
+    SDK->>API: GET /api/v1/client/surveys
+    API->>Cache: Check cache
+    alt Cache Hit
+        Cache-->>API: Return surveys
+    else Cache Miss
+        API->>Service: getSurveys()
+        Service->>DB: Query surveys
+        DB-->>Service: Survey data
+        Service->>Cache: Store in cache
+        Service-->>API: Return surveys
+    end
+    API-->>SDK: Eligible surveys
+    SDK->>User: Display survey widget
+
+    Note over User,Integration: 2. Response Submission
+    User->>SDK: Submits response
+    SDK->>API: POST /api/v1/client/responses
+    API->>Service: createResponse()
+    Service->>DB: Save response
+    DB-->>Service: Response saved
+    Service->>Cache: Invalidate cache
+    Service->>Pipeline: Trigger pipeline
+    Service-->>API: Success
+
+    Note over Pipeline,Integration: 3. Integration Processing
+    Pipeline->>DB: Get webhooks
+    DB-->>Pipeline: Webhook list
+    par Parallel Processing
+        Pipeline->>Integration: Send to Slack
+        Pipeline->>Integration: Send to Notion
+        Pipeline->>Integration: Call webhooks
+        Pipeline->>Integration: Send emails
+    end
+    
+    API-->>SDK: Response created
+    SDK-->>User: Show thank you
