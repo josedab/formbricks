@@ -1,7 +1,7 @@
 "use client";
 
-import { debounce } from "lodash";
 import { SearchIcon } from "lucide-react";
+import { debounce } from "@/lib/utils/debounce";
 import UnsplashImage from "next/image";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";

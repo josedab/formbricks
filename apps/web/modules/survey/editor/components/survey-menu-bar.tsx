@@ -1,8 +1,8 @@
 "use client";
 
 import { Project } from "@prisma/client";
-import { isEqual } from "lodash";
 import { ArrowLeftIcon, SettingsIcon } from "lucide-react";
+import { isEqual } from "@/lib/utils/deep-equal";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";

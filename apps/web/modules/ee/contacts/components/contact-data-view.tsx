@@ -1,7 +1,7 @@
 "use client";
 
-import { debounce } from "lodash";
 import dynamic from "next/dynamic";
+import { debounce } from "@/lib/utils/debounce";
 import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { TContactAttributeKey } from "@formbricks/types/contact-attribute-key";

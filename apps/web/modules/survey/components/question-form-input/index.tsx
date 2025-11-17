@@ -1,8 +1,8 @@
 "use client";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { debounce } from "lodash";
 import { ImagePlusIcon, TrashIcon } from "lucide-react";
+import { debounce } from "@/lib/utils/debounce";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
