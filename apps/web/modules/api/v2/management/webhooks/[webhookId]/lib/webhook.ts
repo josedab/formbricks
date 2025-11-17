@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@formbricks/database";
 import { PrismaErrorType } from "@formbricks/database/types/error";
 import { Result, err, ok } from "@formbricks/types/error-handlers";
+import { validateWebhookUrl } from "@/lib/webhook/ssrf-protection";
 import { ZWebhookUpdateSchema } from "@/modules/api/v2/management/webhooks/[webhookId]/types/webhooks";
 import { ApiErrorResponseV2 } from "@/modules/api/v2/types/api-error";
 
@@ -35,6 +36,11 @@ export const updateWebhook = async (
   webhookInput: z.infer<typeof ZWebhookUpdateSchema>
 ): Promise<Result<Webhook, ApiErrorResponseV2>> => {
   try {
+    // Validate URL for SSRF protection if URL is being updated
+    if (webhookInput.url) {
+      await validateWebhookUrl(webhookInput.url);
+    }
+
     const updatedWebhook = await prisma.webhook.update({
       where: {
         id: webhookId,

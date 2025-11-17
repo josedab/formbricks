@@ -9,6 +9,7 @@ import {
   UnknownError,
 } from "@formbricks/types/errors";
 import { validateInputs } from "@/lib/utils/validate";
+import { validateWebhookUrl } from "@/lib/webhook/ssrf-protection";
 import { isDiscordWebhook } from "@/modules/integrations/webhooks/lib/utils";
 import { TWebhookInput } from "../types/webhooks";
 
@@ -17,6 +18,11 @@ export const updateWebhook = async (
   webhookInput: Partial<TWebhookInput>
 ): Promise<boolean> => {
   try {
+    // Validate URL for SSRF protection if URL is being updated
+    if (webhookInput.url) {
+      await validateWebhookUrl(webhookInput.url);
+    }
+
     await prisma.webhook.update({
       where: {
         id: webhookId,
@@ -64,6 +70,10 @@ export const createWebhook = async (environmentId: string, webhookInput: TWebhoo
     if (isDiscordWebhook(webhookInput.url)) {
       throw new UnknownError("Discord webhooks are currently not supported.");
     }
+
+    // Validate URL for SSRF protection
+    await validateWebhookUrl(webhookInput.url);
+
     await prisma.webhook.create({
       data: {
         ...webhookInput,
@@ -82,7 +92,7 @@ export const createWebhook = async (environmentId: string, webhookInput: TWebhoo
       throw new DatabaseError(error.message);
     }
 
-    if (!(error instanceof InvalidInputError)) {
+    if (!(error instanceof InvalidInputError) && !(error instanceof UnknownError)) {
       throw new DatabaseError(`Database error when creating webhook for environment ${environmentId}`);
     }
 
@@ -114,12 +124,15 @@ export const getWebhooks = async (environmentId: string): Promise<Webhook[]> => 
 
 export const testEndpoint = async (url: string): Promise<boolean> => {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
     if (isDiscordWebhook(url)) {
       throw new UnknownError("Discord webhooks are currently not supported.");
     }
+
+    // Validate URL for SSRF protection
+    await validateWebhookUrl(url);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
     const response = await fetch(url, {
       method: "POST",
@@ -146,7 +159,7 @@ export const testEndpoint = async (url: string): Promise<boolean> => {
     if (error.name === "AbortError") {
       throw new UnknownError("Request timed out after 5 seconds");
     }
-    if (error instanceof UnknownError) {
+    if (error instanceof UnknownError || error instanceof InvalidInputError) {
       throw error;
     }
 
