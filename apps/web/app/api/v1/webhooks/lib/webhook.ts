@@ -5,6 +5,7 @@ import { DatabaseError, InvalidInputError } from "@formbricks/types/errors";
 import { TWebhookInput, ZWebhookInput } from "@/app/api/v1/webhooks/types/webhooks";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { validateInputs } from "@/lib/utils/validate";
+import { generateWebhookSecret } from "@/lib/webhook/signature";
 import { validateWebhookUrl } from "@/lib/webhook/ssrf-protection";
 
 export const createWebhook = async (webhookInput: TWebhookInput): Promise<Webhook> => {
@@ -12,6 +13,9 @@ export const createWebhook = async (webhookInput: TWebhookInput): Promise<Webhoo
 
   // Validate URL for SSRF protection
   await validateWebhookUrl(webhookInput.url);
+
+  // Generate webhook secret for signature verification
+  const secret = generateWebhookSecret();
 
   try {
     const createdWebhook = await prisma.webhook.create({
@@ -21,6 +25,8 @@ export const createWebhook = async (webhookInput: TWebhookInput): Promise<Webhoo
         source: webhookInput.source,
         surveyIds: webhookInput.surveyIds || [],
         triggers: webhookInput.triggers || [],
+        secret,
+        signatureEnabled: true,
         environment: {
           connect: {
             id: webhookInput.environmentId,

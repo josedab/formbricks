@@ -9,6 +9,7 @@ import {
   UnknownError,
 } from "@formbricks/types/errors";
 import { validateInputs } from "@/lib/utils/validate";
+import { generateWebhookSecret } from "@/lib/webhook/signature";
 import { validateWebhookUrl } from "@/lib/webhook/ssrf-protection";
 import { isDiscordWebhook } from "@/modules/integrations/webhooks/lib/utils";
 import { TWebhookInput } from "../types/webhooks";
@@ -74,10 +75,15 @@ export const createWebhook = async (environmentId: string, webhookInput: TWebhoo
     // Validate URL for SSRF protection
     await validateWebhookUrl(webhookInput.url);
 
+    // Generate webhook secret for signature verification
+    const secret = generateWebhookSecret();
+
     await prisma.webhook.create({
       data: {
         ...webhookInput,
         surveyIds: webhookInput.surveyIds || [],
+        secret,
+        signatureEnabled: true,
         environment: {
           connect: {
             id: environmentId,

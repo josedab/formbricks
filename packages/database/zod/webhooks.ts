@@ -39,6 +39,12 @@ export const ZWebhook = z.object({
   surveyIds: z.array(z.string().cuid2()).openapi({
     description: "The IDs of the surveys ",
   }),
+  secret: z.string().nullable().optional().openapi({
+    description: "The HMAC secret for webhook signature verification (hidden from API responses)",
+  }),
+  signatureEnabled: z.boolean().openapi({
+    description: "Whether to include HMAC signatures in webhook requests",
+  }),
 }) satisfies z.ZodType<Webhook>;
 
 ZWebhook.openapi({

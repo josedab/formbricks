@@ -2,6 +2,7 @@ import { Prisma, Webhook } from "@prisma/client";
 import { prisma } from "@formbricks/database";
 import { Result, err, ok } from "@formbricks/types/error-handlers";
 import { captureTelemetry } from "@/lib/telemetry";
+import { generateWebhookSecret } from "@/lib/webhook/signature";
 import { validateWebhookUrl } from "@/lib/webhook/ssrf-protection";
 import { getWebhooksQuery } from "@/modules/api/v2/management/webhooks/lib/utils";
 import { TGetWebhooksFilter, TWebhookInput } from "@/modules/api/v2/management/webhooks/types/webhooks";
@@ -56,6 +57,9 @@ export const createWebhook = async (webhook: TWebhookInput): Promise<Result<Webh
     // Validate URL for SSRF protection
     await validateWebhookUrl(url);
 
+    // Generate webhook secret for signature verification
+    const secret = generateWebhookSecret();
+
     const prismaData: Prisma.WebhookCreateInput = {
       environment: {
         connect: {
@@ -67,6 +71,8 @@ export const createWebhook = async (webhook: TWebhookInput): Promise<Result<Webh
       source,
       triggers,
       surveyIds,
+      secret,
+      signatureEnabled: true,
     };
 
     const createdWebhook = await prisma.webhook.create({

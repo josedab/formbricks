@@ -41,16 +41,18 @@ enum WebhookSource {
 /// @property triggers - Types of events that trigger this webhook
 /// @property surveyIds - List of surveys this webhook is monitoring
 model Webhook {
-  id            String             @id @default(cuid())
-  name          String?
-  createdAt     DateTime           @default(now()) @map(name: "created_at")
-  updatedAt     DateTime           @default(now()) @updatedAt @map(name: "updated_at")
-  url           String
-  source        WebhookSource      @default(user)
-  environment   Environment        @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  environmentId String
-  triggers      PipelineTriggers[]
-  surveyIds     String[]
+  id               String             @id @default(cuid())
+  name             String?
+  createdAt        DateTime           @default(now()) @map(name: "created_at")
+  updatedAt        DateTime           @default(now()) @updatedAt @map(name: "updated_at")
+  url              String
+  source           WebhookSource      @default(user)
+  environment      Environment        @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId    String
+  triggers         PipelineTriggers[]
+  surveyIds        String[]
+  secret           String?            // HMAC secret for signature verification (optional for backwards compatibility)
+  signatureEnabled Boolean            @default(true) // Whether to include signatures in webhook requests
 
   @@index([environmentId])
 }

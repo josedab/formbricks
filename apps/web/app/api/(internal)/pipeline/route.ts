@@ -12,6 +12,7 @@ import { getOrganizationByEnvironmentId } from "@/lib/organization/service";
 import { getResponseCountBySurveyId } from "@/lib/response/service";
 import { getSurvey, updateSurvey } from "@/lib/survey/service";
 import { convertDatesInObject } from "@/lib/time";
+import { getWebhookHeaders } from "@/lib/webhook/signature";
 import { queueAuditEvent } from "@/modules/ee/audit-logs/lib/handler";
 import { TAuditStatus, UNKNOWN_DATA } from "@/modules/ee/audit-logs/types/audit-log";
 import { sendResponseFinishedEmail } from "@/modules/email";
@@ -73,19 +74,27 @@ export const POST = async (request: Request) => {
     ]);
   };
 
-  const webhookPromises = webhooks.map((webhook) =>
-    fetchWithTimeout(webhook.url, {
+  const webhookPromises = webhooks.map((webhook) => {
+    const payload = {
+      webhookId: webhook.id,
+      event,
+      data: response,
+    };
+
+    // Get headers with signature if webhook has a secret and signatures are enabled
+    const webhookHeaders =
+      webhook.signatureEnabled && webhook.secret
+        ? getWebhookHeaders(payload, webhook.secret)
+        : { "Content-Type": "application/json" };
+
+    return fetchWithTimeout(webhook.url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        webhookId: webhook.id,
-        event,
-        data: response,
-      }),
+      headers: webhookHeaders,
+      body: JSON.stringify(payload),
     }).catch((error) => {
       logger.error({ error, url: request.url }, `Webhook call to ${webhook.url} failed`);
-    })
-  );
+    });
+  });
 
   if (event === "responseFinished") {
     // Fetch integrations, survey, and responseCount in parallel
